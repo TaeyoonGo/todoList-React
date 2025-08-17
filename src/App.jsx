@@ -1,29 +1,18 @@
 import './App.css'
-import React, {useState} from "react";
+import {useState, useContext, useEffect} from "react";
 import Header from "./components/Header/Header.jsx";
+import {DarkModeContext} from "./context/ThemeContext.jsx";
+import AddTodo from "./components/AddTodo/AddTodo.jsx";
 
 
 function App() {
-    const [todos, setTodos] = useState([]);
+    const [todos, setTodos] = useState(() => {
+        const storedData = localStorage.getItem('todos');
+        return storedData ? JSON.parse(storedData) : []
+    });
     const [inputValue, setInputValue] = useState("");
     const [filter, setFilter] = useState("all");
-
-    const handleChange = (e) => {
-        const {value} = e.target;
-        setInputValue(value);
-    }
-    const handleClick = () => {
-        if (inputValue === "") {
-            return alert('빈값을 넣으면 안되요');
-        }
-        const newTodo = {
-            id: Date.now(),
-            text: inputValue,
-            isDone: false
-        }
-        setTodos([...todos, newTodo]);
-        setInputValue("");
-    }
+    const {darkMode} = useContext(DarkModeContext);
     const handleDelete = (id) => {
         const result = confirm('삭제하시겠습니까?')
         if (!result) {
@@ -56,29 +45,38 @@ function App() {
 
     const displayTodos = getFilteredTodos();
 
+    useEffect(() => {
+        const storedData = localStorage.getItem("todos");
+        if (storedData) {
+            console.log(JSON.parse(storedData))
+            setTodos(JSON.parse(storedData));
+        }
+    }, []);
+
+    useEffect(() => {
+        localStorage.setItem('todos', JSON.stringify(todos));
+    }, [todos]);
 
     return (
-        <>
-            <div className="container">
-                <Header handleFilter={handleFilter} />
+        <div className="layout">
+            <div className={`${darkMode ? 'dark-mode' : ''} container`}>
+                <Header handleFilter={handleFilter}/>
                 <main className="app-main">
                     <ul>
                         {
                             displayTodos.map((todo) => <li key={todo.id}>
-                                <input type="checkbox" onChange={() => handleToggle(todo.id)} checked={todo.isDone}/>
-                                <span style={{textDecoration: todo.isDone ? 'line-through' : 'none'}}>{todo.text}</span>
+                                <input type="checkbox" onChange={() => handleToggle(todo.id)}
+                                       checked={todo.isDone}/>
+                                <span
+                                    style={{textDecoration: todo.isDone ? 'line-through' : 'none'}}>{todo.text}</span>
                                 <button onClick={() => handleDelete(todo.id)}>X</button>
                             </li>)
                         }
                     </ul>
                 </main>
-                <footer className="app-footer">
-                    <input type="text" onChange={handleChange} value={inputValue} name="input"/>
-                    <button onClick={handleClick}>ADD+</button>
-                </footer>
+                <AddTodo inputValue={inputValue} setInputValue={setInputValue} todos={todos} setTodos={setTodos} />
             </div>
-
-        </>
+        </div>
     )
 }
 
